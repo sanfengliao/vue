@@ -163,13 +163,16 @@ function callActivatedHooks (queue) {
  */
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
+  // 如果当前观察者不在队列中
   if (has[id] == null) {
     has[id] = true
+    // 当队列没有执行更新时将watcher加入queue队列
     if (!flushing) {
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 如果队列正在更新，根据watcher的id将wathcer加入到队列的某个地方
       let i = queue.length - 1
       while (i > index && queue[i].id > watcher.id) {
         i--
@@ -177,6 +180,7 @@ export function queueWatcher (watcher: Watcher) {
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
+    // 如果此时不正在刷新queue，则刷新que
     if (!waiting) {
       waiting = true
 

@@ -30,20 +30,28 @@ export function setActiveInstance(vm: Component) {
 }
 
 export function initLifecycle (vm: Component) {
+  // 定义options作为vm.$options的引用
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 定义parent，获取当前实例的父实例
   let parent = options.parent
+
+  // 将当前实例添加到父实例的 $children 属性里，并设置当前实例的 $parent 指向父实例
+  // 获取的父实例可能是抽象组件，则需要不断向上寻找到第一个非abstract组件
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
+    // 经过上面的 while 循环后，parent 应该是一个非抽象的组件，将它作为当前实例的父级，所以将当前实例 vm 添加到父级的 $children 属性里
     parent.$children.push(vm)
   }
-
+  // 设置当前实例的$parent属性，指向父组件(非abstract组件)
   vm.$parent = parent
+  // 设置$root属性，如果存在父级则使用父级的$root,否则指向本身，这里的$root应该是组件树的跟组件
   vm.$root = parent ? parent.$root : vm
 
+  // 为实例添加属性
   vm.$children = []
   vm.$refs = {}
 
@@ -140,11 +148,13 @@ export function lifecycleMixin (Vue: Class<Component>) {
 
 export function mountComponent (
   vm: Component,
-  el: ?Element,
+  el: ?Element, // 组件的跟元素
   hydrating?: boolean
 ): Component {
+  // 将el元素挂载在Vue实例的$el属性上
   vm.$el = el
   if (!vm.$options.render) {
+    // 如果不存在render函数，则
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
@@ -164,10 +174,13 @@ export function mountComponent (
       }
     }
   }
+
+  // 调用beforeMount函数
   callHook(vm, 'beforeMount')
 
   let updateComponent
   /* istanbul ignore if */
+  // 创建updateConponent函数
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
       const name = vm._name
@@ -176,11 +189,13 @@ export function mountComponent (
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // 调用渲染函数创建vnode
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
       mark(startTag)
+      // 将vnode渲染成真实dom
       vm._update(vnode, hydrating)
       mark(endTag)
       measure(`vue ${name} patch`, startTag, endTag)
@@ -194,6 +209,9 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 创建watcher,这个watcher就是用来执行数据修改之后的逻辑
+  // watcher 对表达式的求值，触发了数据属性的 get 拦截器函数，从而收集到了依赖，当数据变化时能够触发响应。
+  //  Watcher 观察者实例将对 updateComponent 函数求值，updateComponent 函数的执行会间接触发渲染函数(vm.$options.render)的执行，而渲染函数的执行则会触发数据属性的 get 拦截器函数，从而将依赖(观察者)收集，当数据变化时将重新执行 updateComponent 函数，这就完成了重新渲染
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -343,6 +361,7 @@ export function callHook (vm: Component, hook: string) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  // 当实例存在生命周期监听钩子是，触发生命周期钩子函数
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook)
   }

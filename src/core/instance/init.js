@@ -20,6 +20,7 @@ export function initMixin (Vue: Class<Component>) {
 
     let startTag, endTag
     /* istanbul ignore if */
+    // 性能追踪
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-start:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
@@ -27,6 +28,7 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     // a flag to avoid this being observed
+    // 标识vm是一个Vue实例
     vm._isVue = true
     // merge options
     if (options && options._isComponent) {
@@ -35,6 +37,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      // 将构造函数的options和参数重传递的options合并，$options用于Vue的初始化
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -49,9 +52,11 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+    // 初始化生命周期
     initLifecycle(vm)
     initEvents(vm)
     initRender(vm)
+    // 执行beforeCreate，从这里可以知道在beforeCreate函数中,是无法使用data，props等实例属性的
     callHook(vm, 'beforeCreate')
     initInjections(vm) // resolve injections before data/props
     initState(vm)
@@ -90,27 +95,36 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
+// 用于解析构造函数的的options
 export function resolveConstructorOptions (Ctor: Class<Component>) {
+  // 获取构造函数的Options
   let options = Ctor.options
+  // 如果该构造函数有父类构造函数，则将获取父类构造函数的选项(options)并和自己的选项(options)合并
   if (Ctor.super) {
+    // 解析父类构造函数的选项
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
     if (superOptions !== cachedSuperOptions) {
       // super option changed,
       // need to resolve new options.
+      // 缓存父类构造函数的options
       Ctor.superOptions = superOptions
       // check if there are any late-modified/attached options (#4976)
+      // 获取的options
       const modifiedOptions = resolveModifiedOptions(Ctor)
       // update base extend options
+      // 
       if (modifiedOptions) {
         extend(Ctor.extendOptions, modifiedOptions)
       }
+      // 合并父类构造函数的options和自己的options
       options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions)
       if (options.name) {
         options.components[options.name] = Ctor
       }
     }
   }
+  // 返回构造函数的options
   return options
 }
 

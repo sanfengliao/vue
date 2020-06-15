@@ -48,14 +48,19 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 初始化props
   if (opts.props) initProps(vm, opts.props)
+  // 初始化methods
   if (opts.methods) initMethods(vm, opts.methods)
+  // 初始化data
   if (opts.data) {
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  // 初始化computed
   if (opts.computed) initComputed(vm, opts.computed)
+  // 初始化wat
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
@@ -110,10 +115,13 @@ function initProps (vm: Component, propsOptions: Object) {
 }
 
 function initData (vm: Component) {
+  // 获取data
   let data = vm.$options.data
+  // 如果data是个函数，调用函数获取data，否则直接获取
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+  // 判断data是不是对象 如果获取的data不是个对象，则报错
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -123,13 +131,18 @@ function initData (vm: Component) {
     )
   }
   // proxy data on instance
+  // 获取data所有的key
   const keys = Object.keys(data)
+  // 获取props
   const props = vm.$options.props
+  // 获取methods
   const methods = vm.$options.methods
   let i = keys.length
+  
   while (i--) {
     const key = keys[i]
     if (process.env.NODE_ENV !== 'production') {
+      // 下面这段代码是为了检测data中的key是否和methods中的方法名冲突
       if (methods && hasOwn(methods, key)) {
         warn(
           `Method "${key}" has already been defined as a data property.`,
@@ -137,6 +150,7 @@ function initData (vm: Component) {
         )
       }
     }
+    // data中的key是否和props中的key冲突
     if (props && hasOwn(props, key)) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${key}" is already declared as a prop. ` +
@@ -144,15 +158,22 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 如果key不是以'_'或者'$'开头，则在实例对象上代理_data属性
+
+      // 这个函数就是实现了使用this.xxx = xx修改数据的功能
+      // 通过这个函数也可以看出this.xxx实际上代理的是this._data.xxx
+      // 通过前面的代码可以看出vm._data就是data函数中返回的data数据
       proxy(vm, `_data`, key)
     }
   }
   // observe data
+  // observe实现了data的响应式功能
   observe(data, true /* asRootData */)
 }
 
 export function getData (data: Function, vm: Component): any {
   // #7573 disable dep collection when invoking data getters
+  // 防止收集冗余依赖
   pushTarget()
   try {
     return data.call(vm, vm)

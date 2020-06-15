@@ -40,6 +40,7 @@ let timerFunc
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
+  // 如果浏览器支持Promise,则timerFunc使用Promise做一步更新
   const p = Promise.resolve()
   timerFunc = () => {
     p.then(flushCallbacks)
@@ -89,6 +90,7 @@ export function nextTick (cb?: Function, ctx?: Object) {
   callbacks.push(() => {
     if (cb) {
       try {
+        // 将当前组件对象床底给cb
         cb.call(ctx)
       } catch (e) {
         handleError(e, ctx, 'nextTick')
@@ -97,6 +99,7 @@ export function nextTick (cb?: Function, ctx?: Object) {
       _resolve(ctx)
     }
   })
+  // 回调队列是否处于等待刷新状态
   if (!pending) {
     pending = true
     timerFunc()

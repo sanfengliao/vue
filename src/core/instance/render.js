@@ -17,6 +17,7 @@ import VNode, { createEmptyVNode } from '../vdom/vnode'
 import { isUpdatingChildComponent } from './lifecycle'
 
 export function initRender (vm: Component) {
+  // 在当前实例上添加_vnode和_staticTrees两个属性
   vm._vnode = null // the root of the child tree
   vm._staticTrees = null // v-once cached trees
   const options = vm.$options
@@ -28,6 +29,7 @@ export function initRender (vm: Component) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  // 在vue实例上添加createElement函数
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
@@ -37,6 +39,7 @@ export function initRender (vm: Component) {
   // they need to be reactive so that HOCs using them are always updated
   const parentData = parentVnode && parentVnode.data
 
+  // 在实例上添加$attr和$listener两个属性
   /* istanbul ignore else */
   if (process.env.NODE_ENV !== 'production') {
     defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, () => {

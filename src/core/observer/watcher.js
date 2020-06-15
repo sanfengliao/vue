@@ -43,23 +43,32 @@ export default class Watcher {
   value: any;
 
   constructor (
-    vm: Component,
-    expOrFn: string | Function,
+    vm: Component, // vue实例
+    expOrFn: string | Function, // 要观察的表达式,当依赖的数据被修改是，调用该函数
     cb: Function,
     options?: ?Object,
     isRenderWatcher?: boolean
   ) {
+    // 将vm实例赋值给watcher的vm属性
     this.vm = vm
+    // 如果是渲染watcher，则将当前watcher赋值给vm的_watcher
     if (isRenderWatcher) {
+      // 实例的_watcher引用实例对应的Watcher实例
       vm._watcher = this
     }
+    // 将Watcher实例添加到Vue实例的_watchers的数组的
     vm._watchers.push(this)
     // options
     if (options) {
+      // 用来告诉当前观察者实例对象是否是深度观测 我们平时在使用 Vue 的 watch 选项或者 vm.$watch 函数去观测某个数据时，可以通过设置 deep 选项的值为 true 来深度观测该数据。
       this.deep = !!options.deep
+      // 用来标识当前观察者实例对象是 开发者定义的 还是 内部定义的 实际上无论是 Vue 的 watch 选项还是 vm.$watch 函数，他们的实现都是通过实例化 Watcher 类完成的，等到我们讲解 Vue 的 watch 选项和 vm.$watch 的具体实现时大家会看到，除了内部定义的观察者(如：渲染函数的观察者、计算属性的观察者等)之外，所有观察者都被认为是开发者定义的，这时 options.user 会自动被设置为 true。
       this.user = !!options.user
+      // 用来标识当前观察者实例对象是否是计算属性的观察者 这里需要明确的是，计算属性的观察者并不是指一个观察某个计算属性变化的观察者，而是指 Vue 内部在实现计算属性这个功能时为计算属性创建的观察者。等到我们讲解计算属性的实现时再详细说明
       this.lazy = !!options.lazy
+      // 一般在computed属性是会使用上，用来告诉观察者当数据变化时是否同步求值并执行回调 默认情况下当数据变化时不会同步求值并执行回调，而是将需要重新求值并执行回调的观察者放到一个异步队列中，当所有数据的变化结束之后统一求值并执行回调，这么做的好处有很多，我们后面会详细讲解。
       this.sync = !!options.sync
+      // 
       this.before = options.before
     } else {
       this.deep = this.user = this.lazy = this.sync = false
@@ -68,6 +77,7 @@ export default class Watcher {
     this.id = ++uid // uid for batching
     this.active = true
     this.dirty = this.lazy // for lazy watchers
+    // 用于收集依赖和避免重复依赖
     this.deps = []
     this.newDeps = []
     this.depIds = new Set()
@@ -92,17 +102,20 @@ export default class Watcher {
     }
     this.value = this.lazy
       ? undefined
-      : this.get()
+      : this.get() // 调用get函数求职
   }
 
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    // 将当前watcher放入watcher栈中，
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 调用getter时会触发响应式输出的getter放问题，触发依赖收集
+      // 求值。求值的目的有两个，第一个是能够触发访问器属性的 get 拦截器函数，第二个是能够获得被观察目标的值
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -144,6 +157,7 @@ export default class Watcher {
     while (i--) {
       const dep = this.deps[i]
       if (!this.newDepIds.has(dep.id)) {
+        // dep中清楚不存在依赖关系的watcher
         dep.removeSub(this)
       }
     }
@@ -178,7 +192,10 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      // 重新求值，对于渲染观察者来说，相当于重新执行渲染函数
       const value = this.get()
+
+      // 如果首先对比新值 value 和旧值 this.value 是否相等，只有在不相等的情况下才需要执行回调，但是两个值相等就一定不执行回调吗？未必，这个时候就需要检测第二个条件是否成立，即 isObject(value)，判断新值的类型是否是对象，如果是对象的话即使值不变也需要执行回调(自定义的观察者)
       if (
         value !== this.value ||
         // Deep watchers and watchers on Object/Arrays should fire even
@@ -190,6 +207,7 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
+        // 如果开发自己定义的watcher，通过 watch 选项或 $watch 函数定义的观察者
         if (this.user) {
           try {
             this.cb.call(this.vm, value, oldValue)
